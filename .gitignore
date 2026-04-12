@@ -1,0 +1,14 @@
+# Node
+node_modules/
+package-lock.json
+
+# Original heavy GLB models (use optimized/ only)
+*.glb
+!optimized/**/*.glb
+
+# Vegetação original (não-otimizada)
+vegetação da floresta/
+
+# OS
+.DS_Store
+Thumbs.db

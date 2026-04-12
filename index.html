@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Floresta Atlântica – Jornada 3D</title>
+    <meta name="description"
+        content="Uma experiência imersiva de scrollytelling pela floresta atlântica brasileira em 3D." />
+
+    <!-- Import Map: resolves bare 'three' specifiers used inside GLTFLoader -->
+    <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+    <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen">
+        <h2>🌿 Carregando Floresta...</h2>
+        <div class="loading-bar-wrap">
+            <div class="loading-bar-fill"></div>
+        </div>
+        <span id="loading-label">Preparando vegetação... 0%</span>
+    </div>
+
+    <!-- 3D CANVAS -->
+    <div id="canvas-container"></div>
+
+    <!-- HOTSPOTS (dots projected from 3D) -->
+    <div id="hotspots-container"></div>
+
+    <!-- HOTSPOT TOOLTIP -->
+    <div class="hotspot-tooltip" id="hotspot-tooltip">
+        <button class="hotspot-tooltip-close" aria-label="Fechar">✕</button>
+        <div class="hotspot-tooltip-header">
+            <div class="hotspot-tooltip-icon"></div>
+            <span class="hotspot-tooltip-label"></span>
+        </div>
+        <p class="hotspot-tooltip-text"></p>
+    </div>
+
+    <!-- VIGNETTE (cinematic dark edges) -->
+    <div id="vignette"></div>
+
+    <!-- SOUND + FULLSCREEN BUTTONS -->
+    <button id="sound-btn" aria-label="Som" title="Som (M)">🔊</button>
+    <button id="fullscreen-btn" aria-label="Tela cheia" title="Tela cheia (F)">⛶</button>
+
+    <!-- CONCLUSION SCREEN -->
+    <div id="conclusion-screen">
+        <div class="conclusion-content">
+            <div class="conclusion-badge">🌿</div>
+            <h2 class="conclusion-title">Jornada Completa</h2>
+            <p class="conclusion-subtitle">Você percorreu toda a trilha da Floresta Atlântica</p>
+            <div class="conclusion-stats">
+                <div class="conclusion-stat">
+                    <span class="stat-value" id="final-species">5/5</span>
+                    <span class="stat-label">Espécies</span>
+                </div>
+                <div class="conclusion-stat">
+                    <span class="stat-value">218m</span>
+                    <span class="stat-label">Trilha</span>
+                </div>
+                <div class="conclusion-stat">
+                    <span class="stat-value">5</span>
+                    <span class="stat-label">Paradas</span>
+                </div>
+            </div>
+            <div class="conclusion-actions">
+                <button id="restart-btn">↻ Refazer Trilha</button>
+            </div>
+            <p class="conclusion-footer">Obrigado por explorar a Mata Atlântica 💚</p>
+        </div>
+    </div>
+
+    <!-- DISCOVERY COUNTER -->
+    <div id="discovery-counter">
+        <span id="discovery-label">🌿 0/5 espécies descobertas</span>
+    </div>
+
+    <!-- MINIMAP -->
+    <div id="minimap-wrap">
+        <span class="minimap-title">TRILHA</span>
+        <canvas id="minimap-canvas" width="120" height="240"></canvas>
+    </div>
+
+    <!-- LANDSCAPE RECOMMENDATION (mobile portrait) -->
+    <div id="landscape-hint">
+        <div class="landscape-content">
+            <div class="landscape-icon">📱</div>
+            <p>Gire o dispositivo para<br>melhor experiência</p>
+            <button id="landscape-dismiss">Continuar assim</button>
+        </div>
+    </div>
+
+    <!-- SCROLL SPACER (creates scrollable height) -->
+    <div id="scroll-spacer"></div>
+
+    <!-- TITLE OVERLAY -->
+    <div id="title-overlay">
+        <h1>Floresta Atlântica</h1>
+        <p>Uma jornada pela vegetação nativa</p>
+        <div class="scroll-hint">
+            <span>Role para explorar</span>
+            <div class="scroll-arrow"></div>
+        </div>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div id="progress-bar-container">
+        <span id="progress-label">Caminho</span>
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- WAYPOINT NAVIGATION DOTS -->
+    <div id="waypoints-nav">
+        <div class="wp-dot" data-label="Ipê Amarelo" data-idx="0"></div>
+        <div class="wp-dot" data-label="Araucária" data-idx="1"></div>
+        <div class="wp-dot" data-label="Samambaia" data-idx="2"></div>
+        <div class="wp-dot" data-label="Erva-Mate" data-idx="3"></div>
+        <div class="wp-dot" data-label="Margarida" data-idx="4"></div>
+    </div>
+
+    <!-- ─── CURIOSITY CARDS ─── -->
+
+    <!-- Card 1: Ipê Amarelo -->
+    <div class="curiosity-card" id="card-0">
+        <button class="card-close" aria-label="Fechar">✕</button>
+        <div class="card-header">
+            <div class="card-icon"><img src="./OIP (16).webp" alt="Ipê Amarelo"></div>
+            <div class="card-title-group">
+                <span class="card-tag">Parada 1 · Árvore Nacional</span>
+                <h2 class="card-title">Ipê Amarelo</h2>
+                <span class="card-subtitle">Handroanthus albus</span>
+            </div>
+        </div>
+        <div class="card-divider"></div>
+        <p class="card-body">
+            O Ipê Amarelo é um dos símbolos mais icônicos do Brasil. Floresce em agosto — antes mesmo de brotar suas
+            folhas — criando um espetáculo de flores douradas que cobrem toda a copa.
+        </p>
+        <div class="card-fact">
+            ⚡ Curiosidade: A madeira do Ipê é tão densa que afunda na água. É 3× mais resistente que o carvalho europeu.
+        </div>
+    </div>
+
+    <!-- Card 2: Araucária -->
+    <div class="curiosity-card" id="card-1">
+        <button class="card-close" aria-label="Fechar">✕</button>
+        <div class="card-header">
+            <div class="card-icon"><img src="./OIP.webp" alt="Araucária"></div>
+            <div class="card-title-group">
+                <span class="card-tag">Parada 2 · Gigante do Sul</span>
+                <h2 class="card-title">Araucária</h2>
+                <span class="card-subtitle">Araucaria angustifolia</span>
+            </div>
+        </div>
+        <div class="card-divider"></div>
+        <p class="card-body">
+            A Araucária, ou Pinheiro-do-Paraná, é uma árvore pré-histórica que remonta ao período Jurássico. Pode
+            atingir 40 metros de altura e viver mais de <strong>500 anos</strong>. Hoje está ameaçada de extinção.
+        </p>
+        <div class="card-fact">
+            ⚡ Curiosidade: O pinhão, semente da araucária, foi o principal alimento dos povos indígenas do sul do Brasil
+            por milênios.
+        </div>
+    </div>
+
+    <!-- Card 3: Samambaia -->
+    <div class="curiosity-card" id="card-2">
+        <button class="card-close" aria-label="Fechar">✕</button>
+        <div class="card-header">
+            <div class="card-icon"><img src="./samambaia.webp" alt="Samambaia"></div>
+            <div class="card-title-group">
+                <span class="card-tag">Parada 3 · Relíquia Viva</span>
+                <h2 class="card-title">Samambaia</h2>
+                <span class="card-subtitle">Pteridophyta spp.</span>
+            </div>
+        </div>
+        <div class="card-divider"></div>
+        <p class="card-body">
+            As samambaias são uma das formas de vida vegetal mais antigas do planeta. Surgiram há aproximadamente
+            <strong>360 milhões de anos</strong>, muito antes das flores existirem. Se reproduzem por esporos — não por
+            sementes.
+        </p>
+        <div class="card-fact">
+            ⚡ Curiosidade: As samambaias não produzem flores nem frutos. Cada folha pode liberar milhões de esporos
+            microscópicos.
+        </div>
+    </div>
+
+    <!-- Card 4: Erva-Mate -->
+    <div class="curiosity-card" id="card-3">
+        <button class="card-close" aria-label="Fechar">✕</button>
+        <div class="card-header">
+            <div class="card-icon"><img src="./mate.png" alt="Erva-Mate"></div>
+            <div class="card-title-group">
+                <span class="card-tag">Parada 4 · Bebida Sagrada</span>
+                <h2 class="card-title">Erva-Mate</h2>
+                <span class="card-subtitle">Ilex paraguariensis</span>
+            </div>
+        </div>
+        <div class="card-divider"></div>
+        <p class="card-body">
+            A Erva-Mate é nativa da Mata Atlântica e do Cerrado e era usada pelos povos Guaraní há mais de <strong>3.000
+                anos</strong>. Rica em compostos bioativos, possui mais antioxidantes que o chá verde e cafeína natural
+            estimulante.
+        </p>
+        <div class="card-fact">
+            ⚡ Curiosidade: O chimarrão é patrimônio cultural imaterial do Rio Grande do Sul e símbolo de hospitalidade
+            gaúcha.
+        </div>
+    </div>
+
+    <!-- Card 5: Margarida -->
+    <div class="curiosity-card" id="card-4">
+        <button class="card-close" aria-label="Fechar">✕</button>
+        <div class="card-header">
+            <div class="card-icon"><img src="./margarida.png" alt="Margarida"></div>
+            <div class="card-title-group">
+                <span class="card-tag">Parada 5 · Flor do Campo</span>
+                <h2 class="card-title">Margarida</h2>
+                <span class="card-subtitle">Leucanthemum vulgare</span>
+            </div>
+        </div>
+        <div class="card-divider"></div>
+        <p class="card-body">
+            A Margarida é uma das flores mais reconhecidas do mundo, mas guarda um segredo: o que parece ser uma única
+            flor é na verdade uma inflorescência com <strong>centenas de flores minúsculas</strong> organizadas em
+            espiral.
+        </p>
+        <div class="card-fact">
+            ⚡ Curiosidade: A espiral das pétalas da margarida segue a sequência de Fibonacci — a mesma matemática das
+            conchas e galáxias!
+        </div>
+    </div>
+
+    <!-- Landscape dismiss handler -->
+    <script>
+        document.getElementById('landscape-dismiss')?.addEventListener('click', () => {
+            document.getElementById('landscape-hint').classList.add('dismissed');
+        });
+    </script>
+
+    <!-- SCRIPT (type=module for Three.js imports) -->
+    <script type="module" src="./main.js"></script>
+</body>
+
+</html>
