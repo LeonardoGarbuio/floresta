@@ -425,9 +425,11 @@ function updateDiscovery() {
 
 // ─── CARDS / LOOK-AT ─────────────────────────────────────
 let activeWP = -1;
+let dismissedWP = -1; // track which card was manually closed
 const currentLookAt = new THREE.Vector3();
 function showCard(i) {
     if (activeWP === i) return;
+    if (dismissedWP === i) return; // user closed this card, don't reopen
     document.querySelectorAll('.curiosity-card').forEach(c => c.classList.remove('visible'));
     document.getElementById(`card-${i}`)?.classList.add('visible');
     document.querySelectorAll('.wp-dot').forEach((d, j) => d.classList.toggle('active', j === i));
@@ -435,9 +437,10 @@ function showCard(i) {
     if (!discovered.has(i)) { discovered.add(i); updateDiscovery(); }
     updateHotspotsVisibility();
 }
-function hideCards() {
+function hideCards(userDismissed = false) {
     document.querySelectorAll('.curiosity-card').forEach(c => c.classList.remove('visible'));
     document.querySelectorAll('.wp-dot').forEach(d => d.classList.remove('active'));
+    if (userDismissed) dismissedWP = activeWP;
     activeWP = -1;
     updateHotspotsVisibility();
     hideTooltip();
@@ -446,6 +449,8 @@ function checkWaypoints(t) {
     for (let i = 0; i < WAYPOINTS.length; i++) {
         if (Math.abs(t - WAYPOINTS[i].t) < 0.05) { showCard(i); return; }
     }
+    // User scrolled away from all waypoints – clear dismissed flag
+    dismissedWP = -1;
     if (activeWP !== -1) hideCards();
 }
 
@@ -843,7 +848,7 @@ window.addEventListener('resize', () => {
 });
 
 // ─── UI INIT ─────────────────────────────────────────────
-document.querySelectorAll('.card-close').forEach(btn => btn.addEventListener('click', hideCards));
+document.querySelectorAll('.card-close').forEach(btn => btn.addEventListener('click', () => hideCards(true)));
 document.querySelectorAll('.wp-dot').forEach((dot, i) =>
     dot.addEventListener('click', () => {
         const max = document.body.scrollHeight - window.innerHeight;
