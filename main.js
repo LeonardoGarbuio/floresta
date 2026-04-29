@@ -432,13 +432,17 @@ function showCard(i) {
     if (!discovered.has(i)) { discovered.add(i); updateDiscovery(); }
     updateHotspotsVisibility();
 }
-function hideCards(userDismissed = false) {
+function hideCards() {
     document.querySelectorAll('.curiosity-card').forEach(c => c.classList.remove('visible'));
     document.querySelectorAll('.wp-dot').forEach(d => d.classList.remove('active'));
-    if (userDismissed) dismissedWP = activeWP;
     activeWP = -1;
     updateHotspotsVisibility();
     hideTooltip();
+}
+// X button: only hide the card, keep camera + hotspots on the plant
+function dismissCard() {
+    dismissedWP = activeWP;
+    document.querySelectorAll('.curiosity-card').forEach(c => c.classList.remove('visible'));
 }
 function checkWaypoints(t) {
     for (let i = 0; i < WAYPOINTS.length; i++) {
@@ -829,7 +833,7 @@ window.addEventListener('resize', () => {
 });
 
 // ─── UI INIT ─────────────────────────────────────────────
-document.querySelectorAll('.card-close').forEach(btn => btn.addEventListener('click', () => hideCards(true)));
+document.querySelectorAll('.card-close').forEach(btn => btn.addEventListener('click', dismissCard));
 document.querySelectorAll('.wp-dot').forEach((dot, i) =>
     dot.addEventListener('click', () => {
         const max = document.body.scrollHeight - window.innerHeight;
