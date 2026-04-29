@@ -14,15 +14,15 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
 dracoLoader.preload();
 
-// ─── RENDERER (adaptive to device) ──────────────────────
-const maxPR = TIER === 'high' ? 1.5 : TIER === 'med' ? 1.0 : 0.75;
+// ─── RENDERER (full quality everywhere) ──────────────────
+const maxPR = Math.min(window.devicePixelRatio, 1.5);
 const renderer = new THREE.WebGLRenderer({
-    antialias: TIER === 'high',
-    powerPreference: isMobile ? 'low-power' : 'high-performance',
+    antialias: !isMobile,
+    powerPreference: 'high-performance',
     stencil: false,
     depth: true,
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPR));
+renderer.setPixelRatio(maxPR);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
@@ -33,13 +33,10 @@ document.getElementById('canvas-container').appendChild(renderer.domElement);
 // ─── SCENE + BLUE SKY ───────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x5BA3D9);
-// Tighter fog on mobile = GPU skips distant fragments (free perf)
-const fogNear = TIER === 'high' ? 70 : TIER === 'med' ? 50 : 35;
-const fogFar = TIER === 'high' ? 200 : TIER === 'med' ? 150 : 100;
-scene.fog = new THREE.Fog(0x87CEEB, fogNear, fogFar);
+scene.fog = new THREE.Fog(0x87CEEB, 70, 200);
 
 // ─── CAMERA ──────────────────────────────────────────────
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, fogFar + 20);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 250);
 
 // ─── DAYTIME LIGHTING (forest-friendly, preserves tree colors) ─
 scene.add(new THREE.HemisphereLight(0x8ed4a0, 0x3a6b3a, 2.6));
@@ -52,7 +49,7 @@ scene.add(fill);
 scene.add(new THREE.AmbientLight(0x304830, 0.5));
 
 // ─── PROCEDURAL CLOUDS (soft, realistic edges) ──────────
-const CLOUD_TEX_SIZE = TIER === 'high' ? 512 : 256;
+const CLOUD_TEX_SIZE = 512;
 const CLOUD_TEX_H = CLOUD_TEX_SIZE / 2;
 function createCloudTexture(seed) {
     const canvas = document.createElement('canvas');
@@ -87,7 +84,7 @@ function createCloudTexture(seed) {
     return new THREE.CanvasTexture(canvas);
 }
 
-const CLOUD_COUNT = TIER === 'high' ? 20 : TIER === 'med' ? 10 : 6;
+const CLOUD_COUNT = 20;
 const clouds = [];
 // Reuse geometry across clouds (huge draw call savings)
 const cloudGeoCache = {};
@@ -129,9 +126,7 @@ const curve = new THREE.CatmullRomCurve3([
 
 // ─── GROUND (vertex-colored grass patches) ───────────────
 (() => {
-    const gw = 120, gh = 460;
-    const segX = TIER === 'high' ? 60 : 30;
-    const segZ = TIER === 'high' ? 220 : 110;
+    const gw = 120, gh = 460, segX = 60, segZ = 220;
     const floorGeo = new THREE.PlaneGeometry(gw, gh, segX, segZ);
     const colors = new Float32Array(floorGeo.attributes.position.count * 3);
     for (let i = 0; i < floorGeo.attributes.position.count; i++) {
@@ -183,7 +178,7 @@ scene.add(createCurvedRibbon(4.5, -1.485, new THREE.MeshStandardMaterial({ color
 
 // ─── STONES (instanced for minimal draw calls) ──────────
 const dummy = new THREE.Object3D();
-const STONE_COUNT = TIER === 'high' ? 70 : TIER === 'med' ? 40 : 25;
+const STONE_COUNT = 70;
 const stoneMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.9 });
 const stoneGeo = new THREE.SphereGeometry(1, 5, 4);
 const stoneInst = new THREE.InstancedMesh(stoneGeo, stoneMat, STONE_COUNT);
@@ -237,7 +232,7 @@ function normalise(gltfScene, targetH) {
     return { scale: s, box };
 }
 
-const INST_COUNT = TIER === 'high' ? 20 : TIER === 'med' ? 12 : 8;
+const INST_COUNT = 20;
 function instForest(gltfScene, _count, zStart, zEnd) {
     const count = INST_COUNT;
     const { scale: baseScale, box } = normalise(gltfScene, 11);
@@ -338,7 +333,7 @@ const heroFiles = [
     { file: './optimized/Meshy_AI_araucaria_0222021559_generate.glb',   wp: 1, height: 15 },
     { file: './optimized/Meshy_AI_samambaia_0222022826_generate.glb',   wp: 2, height: 1.5 },
     { file: './optimized/Meshy_AI_erva_mate_0222023324_generate.glb',   wp: 3, height: 5 },
-    { file: './optimized/Meshy_AI_margarida_0222024657_generate.glb',   wp: 4, height: 1.8, cluster: TIER === 'high' ? 25 : TIER === 'med' ? 15 : 10 },
+    { file: './optimized/Meshy_AI_margarida_0222024657_generate.glb',   wp: 4, height: 1.8, cluster: 25 },
 ];
 heroFiles.forEach(({ file, wp, height, cluster }) => {
     loader.load(file, gltf => {
@@ -352,7 +347,7 @@ heroFiles.forEach(({ file, wp, height, cluster }) => {
 });
 
 // ─── FIREFLIES ───────────────────────────────────────────
-const FF = TIER === 'high' ? 50 : TIER === 'med' ? 25 : 15;
+const FF = 50;
 const ffPos = new Float32Array(FF * 3), ffSpd = new Float32Array(FF);
 for (let i = 0; i < FF; i++) {
     ffPos[i * 3] = (Math.random() - 0.5) * 28;
@@ -366,7 +361,7 @@ const ffMat = new THREE.PointsMaterial({ color: 0xb8ffb0, size: 0.18, transparen
 scene.add(new THREE.Points(ffGeo, ffMat));
 
 // ─── FALLING LEAF PARTICLES ──────────────────────────────
-const LEAF_COUNT = TIER === 'high' ? 40 : TIER === 'med' ? 20 : 10;
+const LEAF_COUNT = 40;
 const leafPos = new Float32Array(LEAF_COUNT * 3);
 const leafCol = new Float32Array(LEAF_COUNT * 3);
 const leafSpd = new Float32Array(LEAF_COUNT);
@@ -730,29 +725,15 @@ minimapCanvas?.addEventListener('click', e => {
     }
 });
 
-// ─── ADAPTIVE QUALITY (AAA-style dynamic resolution) ─────
+// ─── FPS TRACKER (for particle throttle, never changes resolution) ─
 let frameCount = 0, lastFPSCheck = performance.now();
-const MIN_PR = isMobile ? 0.5 : 0.75;
 let currentFPS = 60;
-function adaptQuality() {
+function trackFPS() {
     frameCount++;
     const now = performance.now(), elapsed = now - lastFPSCheck;
     if (elapsed >= 1500) {
         currentFPS = (frameCount / elapsed) * 1000;
         frameCount = 0; lastFPSCheck = now;
-        const pr = renderer.getPixelRatio();
-        if (currentFPS < 22 && pr > MIN_PR) {
-            // Emergency: drop resolution fast
-            renderer.setPixelRatio(Math.max(MIN_PR, pr - 0.3));
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        } else if (currentFPS < 30 && pr > MIN_PR) {
-            renderer.setPixelRatio(Math.max(MIN_PR, pr - 0.15));
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        } else if (currentFPS > 50 && pr < maxPR) {
-            // Slowly recover quality when FPS is good
-            renderer.setPixelRatio(Math.min(maxPR, pr + 0.05));
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
     }
 }
 
@@ -830,7 +811,7 @@ function animate() {
     updateHotspotPositions();
     // Minimap: skip frames on mobile (it's a small canvas, nobody notices)
     if (animFrame % MINIMAP_SKIP === 0) drawMinimap();
-    adaptQuality();
+    trackFPS();
     renderer.info.reset();
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
