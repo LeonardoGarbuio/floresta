@@ -182,6 +182,7 @@ scene.add(createCurvedRibbon(11, -1.49, new THREE.MeshStandardMaterial({ color: 
 scene.add(createCurvedRibbon(4.5, -1.485, new THREE.MeshStandardMaterial({ color: 0x5a3c1e, roughness: 1 })));
 
 // ─── STONES (instanced for minimal draw calls) ──────────
+const dummy = new THREE.Object3D();
 const STONE_COUNT = TIER === 'high' ? 70 : TIER === 'med' ? 40 : 25;
 const stoneMat = new THREE.MeshStandardMaterial({ color: 0x7a6a5a, roughness: 0.9 });
 const stoneGeo = new THREE.SphereGeometry(1, 5, 4);
@@ -227,7 +228,6 @@ function getCurveXAtZ(z) { return curve.getPointAt(Math.max(0, Math.min(0.999, (
 // ─── GLTF LOADER ─────────────────────────────────────────
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
-const dummy = new THREE.Object3D();
 
 function normalise(gltfScene, targetH) {
     const box = new THREE.Box3().setFromObject(gltfScene);
